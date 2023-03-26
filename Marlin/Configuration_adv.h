@@ -388,7 +388,7 @@
    *
    * A very stable heater might produce a false positive and halt the printer. In this case, try increasing
    * the corresponding THERMAL_PROTECTION_*_PERIOD constant a bit. Keep in mind that uncontrolled heating
-   * shouldn't be allowed to persist for more than a minite or two.
+   * shouldn't be allowed to persist for more than a minute or two.
    *
    * Be careful to distinguish false positives from real sensor issues before disabling this feature. If the
    * heater's temperature appears even slightly higher than expected after restarting, you may have a real
@@ -1957,7 +1957,7 @@
 //
 // Specify additional languages for the UI. Default specified by LCD_LANGUAGE.
 //
-#if ANY(DOGLCD, TFT_COLOR_UI, TOUCH_UI_FTDI_EVE, IS_DWIN_MARLINUI)
+#if ANY(DOGLCD, TFT_COLOR_UI, TOUCH_UI_FTDI_EVE, IS_DWIN_MARLINUI, ANYCUBIC_LCD_VYPER)
   //#define LCD_LANGUAGE_2 fr
   //#define LCD_LANGUAGE_3 de
   //#define LCD_LANGUAGE_4 es
