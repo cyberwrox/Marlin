@@ -44,6 +44,9 @@
   #include "../../feature/bedlevel/bedlevel.h"
 #endif
 
+// Always show configurable options regardless of FT Motion active
+//#define FT_MOTION_NO_MENU_TOGGLE
+
 constexpr bool has_large_area() {
   return TERN0(HAS_X_AXIS, (X_BED_SIZE) >= 1000) || TERN0(HAS_Y_AXIS, (Y_BED_SIZE) >= 1000) || TERN0(HAS_Z_AXIS, (Z_MAX_POS) >= 1000);
 }
@@ -323,7 +326,6 @@ void menu_move() {
 #if ENABLED(FT_MOTION_MENU)
 
   #include "../../module/ft_motion.h"
-  #include "../../gcode/gcode.h"
 
   FSTR_P get_shaper_name(const AxisEnum axis=X_AXIS) {
     switch (ftMotion.cfg.shaper[axis]) {
@@ -351,44 +353,44 @@ void menu_move() {
     }
   #endif
 
-  void ftm_menu_set_cmpn(const AxisEnum axis, const ftMotionShaper_t s) {
+  void ftm_menu_set_shaper(const AxisEnum axis, const ftMotionShaper_t s) {
     ftMotion.cfg.shaper[axis] = s;
     ftMotion.update_shaping_params();
     ui.go_back();
   }
 
-  inline void menu_ftm_cmpn_x() {
+  inline void menu_ftm_shaper_x() {
     const ftMotionShaper_t shaper = ftMotion.cfg.shaper.x;
     START_MENU();
     BACK_ITEM(MSG_FIXED_TIME_MOTION);
 
-    if (shaper != ftMotionShaper_NONE)   ACTION_ITEM(MSG_LCD_OFF,  []{ ftm_menu_set_cmpn(X_AXIS, ftMotionShaper_NONE); });
-    if (shaper != ftMotionShaper_ZV)     ACTION_ITEM(MSG_FTM_ZV,   []{ ftm_menu_set_cmpn(X_AXIS, ftMotionShaper_ZV); });
-    if (shaper != ftMotionShaper_ZVD)    ACTION_ITEM(MSG_FTM_ZVD,  []{ ftm_menu_set_cmpn(X_AXIS, ftMotionShaper_ZVD); });
-    if (shaper != ftMotionShaper_ZVDD)   ACTION_ITEM(MSG_FTM_ZVDD, []{ ftm_menu_set_cmpn(X_AXIS, ftMotionShaper_ZVDD); });
-    if (shaper != ftMotionShaper_ZVDDD)  ACTION_ITEM(MSG_FTM_ZVDDD,[]{ ftm_menu_set_cmpn(X_AXIS, ftMotionShaper_ZVDDD); });
-    if (shaper != ftMotionShaper_EI)     ACTION_ITEM(MSG_FTM_EI,   []{ ftm_menu_set_cmpn(X_AXIS, ftMotionShaper_EI); });
-    if (shaper != ftMotionShaper_2HEI)   ACTION_ITEM(MSG_FTM_2HEI, []{ ftm_menu_set_cmpn(X_AXIS, ftMotionShaper_2HEI); });
-    if (shaper != ftMotionShaper_3HEI)   ACTION_ITEM(MSG_FTM_3HEI, []{ ftm_menu_set_cmpn(X_AXIS, ftMotionShaper_3HEI); });
-    if (shaper != ftMotionShaper_MZV)    ACTION_ITEM(MSG_FTM_MZV,  []{ ftm_menu_set_cmpn(X_AXIS, ftMotionShaper_MZV); });
+    if (shaper != ftMotionShaper_NONE)   ACTION_ITEM(MSG_LCD_OFF,  []{ ftm_menu_set_shaper(X_AXIS, ftMotionShaper_NONE); });
+    if (shaper != ftMotionShaper_ZV)     ACTION_ITEM(MSG_FTM_ZV,   []{ ftm_menu_set_shaper(X_AXIS, ftMotionShaper_ZV); });
+    if (shaper != ftMotionShaper_ZVD)    ACTION_ITEM(MSG_FTM_ZVD,  []{ ftm_menu_set_shaper(X_AXIS, ftMotionShaper_ZVD); });
+    if (shaper != ftMotionShaper_ZVDD)   ACTION_ITEM(MSG_FTM_ZVDD, []{ ftm_menu_set_shaper(X_AXIS, ftMotionShaper_ZVDD); });
+    if (shaper != ftMotionShaper_ZVDDD)  ACTION_ITEM(MSG_FTM_ZVDDD,[]{ ftm_menu_set_shaper(X_AXIS, ftMotionShaper_ZVDDD); });
+    if (shaper != ftMotionShaper_EI)     ACTION_ITEM(MSG_FTM_EI,   []{ ftm_menu_set_shaper(X_AXIS, ftMotionShaper_EI); });
+    if (shaper != ftMotionShaper_2HEI)   ACTION_ITEM(MSG_FTM_2HEI, []{ ftm_menu_set_shaper(X_AXIS, ftMotionShaper_2HEI); });
+    if (shaper != ftMotionShaper_3HEI)   ACTION_ITEM(MSG_FTM_3HEI, []{ ftm_menu_set_shaper(X_AXIS, ftMotionShaper_3HEI); });
+    if (shaper != ftMotionShaper_MZV)    ACTION_ITEM(MSG_FTM_MZV,  []{ ftm_menu_set_shaper(X_AXIS, ftMotionShaper_MZV); });
 
     END_MENU();
   }
 
-  inline void menu_ftm_cmpn_y() {
+  inline void menu_ftm_shaper_y() {
     const ftMotionShaper_t shaper = ftMotion.cfg.shaper.y;
     START_MENU();
     BACK_ITEM(MSG_FIXED_TIME_MOTION);
 
-    if (shaper != ftMotionShaper_NONE)   ACTION_ITEM(MSG_LCD_OFF,  []{ ftm_menu_set_cmpn(Y_AXIS, ftMotionShaper_NONE); });
-    if (shaper != ftMotionShaper_ZV)     ACTION_ITEM(MSG_FTM_ZV,   []{ ftm_menu_set_cmpn(Y_AXIS, ftMotionShaper_ZV); });
-    if (shaper != ftMotionShaper_ZVD)    ACTION_ITEM(MSG_FTM_ZVD,  []{ ftm_menu_set_cmpn(Y_AXIS, ftMotionShaper_ZVD); });
-    if (shaper != ftMotionShaper_ZVDD)   ACTION_ITEM(MSG_FTM_ZVDD, []{ ftm_menu_set_cmpn(Y_AXIS, ftMotionShaper_ZVDD); });
-    if (shaper != ftMotionShaper_ZVDDD)  ACTION_ITEM(MSG_FTM_ZVDDD,[]{ ftm_menu_set_cmpn(Y_AXIS, ftMotionShaper_ZVDDD); });
-    if (shaper != ftMotionShaper_EI)     ACTION_ITEM(MSG_FTM_EI,   []{ ftm_menu_set_cmpn(Y_AXIS, ftMotionShaper_EI); });
-    if (shaper != ftMotionShaper_2HEI)   ACTION_ITEM(MSG_FTM_2HEI, []{ ftm_menu_set_cmpn(Y_AXIS, ftMotionShaper_2HEI); });
-    if (shaper != ftMotionShaper_3HEI)   ACTION_ITEM(MSG_FTM_3HEI, []{ ftm_menu_set_cmpn(Y_AXIS, ftMotionShaper_3HEI); });
-    if (shaper != ftMotionShaper_MZV)    ACTION_ITEM(MSG_FTM_MZV,  []{ ftm_menu_set_cmpn(Y_AXIS, ftMotionShaper_MZV); });
+    if (shaper != ftMotionShaper_NONE)   ACTION_ITEM(MSG_LCD_OFF,  []{ ftm_menu_set_shaper(Y_AXIS, ftMotionShaper_NONE); });
+    if (shaper != ftMotionShaper_ZV)     ACTION_ITEM(MSG_FTM_ZV,   []{ ftm_menu_set_shaper(Y_AXIS, ftMotionShaper_ZV); });
+    if (shaper != ftMotionShaper_ZVD)    ACTION_ITEM(MSG_FTM_ZVD,  []{ ftm_menu_set_shaper(Y_AXIS, ftMotionShaper_ZVD); });
+    if (shaper != ftMotionShaper_ZVDD)   ACTION_ITEM(MSG_FTM_ZVDD, []{ ftm_menu_set_shaper(Y_AXIS, ftMotionShaper_ZVDD); });
+    if (shaper != ftMotionShaper_ZVDDD)  ACTION_ITEM(MSG_FTM_ZVDDD,[]{ ftm_menu_set_shaper(Y_AXIS, ftMotionShaper_ZVDDD); });
+    if (shaper != ftMotionShaper_EI)     ACTION_ITEM(MSG_FTM_EI,   []{ ftm_menu_set_shaper(Y_AXIS, ftMotionShaper_EI); });
+    if (shaper != ftMotionShaper_2HEI)   ACTION_ITEM(MSG_FTM_2HEI, []{ ftm_menu_set_shaper(Y_AXIS, ftMotionShaper_2HEI); });
+    if (shaper != ftMotionShaper_3HEI)   ACTION_ITEM(MSG_FTM_3HEI, []{ ftm_menu_set_shaper(Y_AXIS, ftMotionShaper_3HEI); });
+    if (shaper != ftMotionShaper_MZV)    ACTION_ITEM(MSG_FTM_MZV,  []{ ftm_menu_set_shaper(Y_AXIS, ftMotionShaper_MZV); });
 
     END_MENU();
   }
@@ -436,9 +438,10 @@ void menu_move() {
       ftMotion.update_shaping_params();
     });
 
-    if (c.active) {
+    // Show only when FT Motion is active (or optionally always show)
+    if (c.active || ENABLED(FT_MOTION_NO_MENU_TOGGLE)) {
       #if HAS_X_AXIS
-        SUBMENU_N(X_AXIS, MSG_FTM_CMPN_MODE, menu_ftm_cmpn_x);
+        SUBMENU_N(X_AXIS, MSG_FTM_CMPN_MODE, menu_ftm_shaper_x);
         MENU_ITEM_ADDON_START_RJ(5); lcd_put_u8str(shaper_name[X_AXIS]); MENU_ITEM_ADDON_END();
 
         if (AXIS_HAS_SHAPER(X)) {
@@ -449,7 +452,7 @@ void menu_move() {
         }
       #endif
       #if HAS_Y_AXIS
-        SUBMENU_N(Y_AXIS, MSG_FTM_CMPN_MODE, menu_ftm_cmpn_y);
+        SUBMENU_N(Y_AXIS, MSG_FTM_CMPN_MODE, menu_ftm_shaper_y);
         MENU_ITEM_ADDON_START_RJ(5); lcd_put_u8str(shaper_name[Y_AXIS]); MENU_ITEM_ADDON_END();
 
         if (AXIS_HAS_SHAPER(Y)) {
@@ -475,7 +478,8 @@ void menu_move() {
 
       #if HAS_EXTRUDERS
         EDIT_ITEM(bool, MSG_LINEAR_ADVANCE, &c.linearAdvEna);
-        if (c.linearAdvEna) EDIT_ITEM(float42_52, MSG_ADVANCE_K, &c.linearAdvK, 0, 10);
+        if (c.linearAdvEna || ENABLED(FT_MOTION_NO_MENU_TOGGLE))
+          EDIT_ITEM(float42_52, MSG_ADVANCE_K, &c.linearAdvK, 0, 10);
       #endif
     }
     END_MENU();
@@ -492,23 +496,28 @@ void menu_move() {
       MString<20> dmode = get_dyn_freq_mode_name();
     #endif
 
+    #if HAS_EXTRUDERS
+      ft_config_t &c = ftMotion.cfg;
+    #endif
+
     START_MENU();
 
     #if HAS_X_AXIS
-      SUBMENU_N(X_AXIS, MSG_FTM_CMPN_MODE, menu_ftm_cmpn_x);
+      SUBMENU_N(X_AXIS, MSG_FTM_CMPN_MODE, menu_ftm_shaper_x);
       MENU_ITEM_ADDON_START_RJ(5); lcd_put_u8str(shaper_name[X_AXIS]); MENU_ITEM_ADDON_END();
     #endif
     #if HAS_Y_AXIS
-      SUBMENU_N(Y_AXIS, MSG_FTM_CMPN_MODE, menu_ftm_cmpn_y);
+      SUBMENU_N(Y_AXIS, MSG_FTM_CMPN_MODE, menu_ftm_shaper_y);
       MENU_ITEM_ADDON_START_RJ(5); lcd_put_u8str(shaper_name[Y_AXIS]); MENU_ITEM_ADDON_END();
     #endif
-
     #if HAS_DYNAMIC_FREQ
       SUBMENU(MSG_FTM_DYN_MODE, menu_ftm_dyn_mode);
       MENU_ITEM_ADDON_START_RJ(dmode.length()); lcd_put_u8str(dmode); MENU_ITEM_ADDON_END();
     #endif
     #if HAS_EXTRUDERS
-      EDIT_ITEM(bool, MSG_LINEAR_ADVANCE, &ftMotion.cfg.linearAdvEna);
+      EDIT_ITEM(bool, MSG_LINEAR_ADVANCE, &c.linearAdvEna);
+      if (c.linearAdvEna || ENABLED(FT_MOTION_NO_MENU_TOGGLE))
+        EDIT_ITEM(float42_52, MSG_ADVANCE_K, &c.linearAdvK, 0, 10);
     #endif
 
     END_MENU();
