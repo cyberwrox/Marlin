@@ -19,47 +19,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+#include "../platforms.h"
 
-/**
- * mmu2_power.cpp
- */
+#ifdef __PLAT_RP2040__
 
 #include "../../inc/MarlinConfigPre.h"
 
-#if HAS_PRUSA_MMU3
+#include "HAL.h"
+#include "pinDefinitions.h"
 
-#include "mmu2.h"
-#include "mmu2_power.h"
-
-#include "../../MarlinCore.h"
-
-#include "../../core/macros.h"
-#include "../../core/boards.h"
-#include "../../pins/pins.h"
-
-namespace MMU3 {
-
-// On MK3 we cannot do actual power cycle on HW. Instead trigger a hardware reset.
-void power_on() {
-  #if PIN_EXISTS(MMU2_RST)
-    OUT_WRITE(MMU2_RST_PIN, HIGH);
-  #endif
-  power_reset();
+void MarlinHAL::set_pwm_duty(const pin_t pin, const uint16_t v, const uint16_t v_size/*=255*/, const bool invert/*=false*/) {
+  analogWrite(pin, v);
 }
 
-void power_off() {}
-
-void power_reset() {
-  #if PIN_EXISTS(MMU2_RST) // HW - pulse reset pin
-    WRITE(MMU2_RST_PIN, LOW);
-    safe_delay(100);
-    WRITE(MMU2_RST_PIN, HIGH);
-  #else
-    mmu3.reset(MMU3::Software); // TODO: Needs redesign. This power implementation shouldn't know anything about the MMU itself
-  #endif
-  // otherwise HW reset is not available
+void MarlinHAL::set_pwm_frequency(const pin_t pin, const uint16_t f_desired) {
+  mbed::PwmOut* pwm = digitalPinToPwm(pin);
+  if (pwm != NULL) delete pwm;
+  pwm = new mbed::PwmOut(digitalPinToPinName(pin));
+  digitalPinToPwm(pin) = pwm;
+  pwm->period_ms(1000 / f_desired);
 }
 
-} // MMU3
-
-#endif // HAS_PRUSA_MMU3
+#endif // __PLAT_RP2040__

@@ -21,45 +21,33 @@
  */
 
 /**
- * mmu2_fsensor.cpp
+ * mmu2_crc.cpp
  */
 
 #include "../../inc/MarlinConfigPre.h"
 
 #if HAS_PRUSA_MMU3
 
-#include "../../feature/runout.h"
-#include "mmu2_fsensor.h"
+#include "mmu3_crc.h"
 
-namespace MMU3 {
+#ifdef __AVR__
+  #include <util/crc16.h>
+#endif
 
-  #if HAS_FILAMENT_SENSOR
+namespace modules {
 
-    FSensorBlockRunout::FSensorBlockRunout() {
-      runout.enabled = false; // Suppress filament runouts while loading filament.
-      //fsensor.setAutoLoadEnabled(false); //suppress filament autoloads while loading filament.
-    }
+namespace crc {
 
-    FSensorBlockRunout::~FSensorBlockRunout() {
-      //fsensor.settings_init(); // restore filament runout state.
-      runout.reset();
-      runout.enabled = true;
-      //SERIAL_ECHOLNPGM("FSUnBlockRunout");
-    }
-
+uint8_t CRC8::CCITT_update(uint8_t crc, uint8_t b) {
+  #ifdef __AVR__
+    return _crc8_ccitt_update(crc, b);
   #else
-
-    FSensorBlockRunout::FSensorBlockRunout() { }
-    FSensorBlockRunout::~FSensorBlockRunout() { }
-
+    return CCITT_updateCX(crc, b);
   #endif
+}
 
+} // namespace crc
 
-  FilamentState WhereIsFilament() {
-    //return fsensor.getFilamentPresent() ? FilamentState::AT_FSENSOR : FilamentState::NOT_PRESENT;
-    return FILAMENT_PRESENT() ? FilamentState::AT_FSENSOR : FilamentState::NOT_PRESENT;
-  }
-
-} // MMU3
+} // namespace modules
 
 #endif // HAS_PRUSA_MMU3
