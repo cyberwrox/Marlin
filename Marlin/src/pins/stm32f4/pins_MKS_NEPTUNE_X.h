@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2024 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -21,32 +21,32 @@
  */
 #pragma once
 
-/**
- * RAMPS-FD v2
- *
- * EEPROM supported
- * Use 1k thermistor tables
- */
+#define ALLOW_STM32DUINO
+#include "env_validate.h"
 
-#define BOARD_INFO_NAME "RAMPS-FD v2"
-
-#ifndef E0_CS_PIN
-  #define E0_CS_PIN                           69  // moved from A13 to A15 on v2.2, if not earlier
+#if HOTENDS > 2 || E_STEPPERS > 2
+  #error "MKS Neptune X supports up to 2 hotends / E steppers."
 #endif
 
-#include "pins_RAMPS_FD_V1.h"
+#define BOARD_INFO_NAME "MKS Neptune X"
 
-#undef INVERTED_HEATER_PINS
-#undef INVERTED_BED_PINS
-#undef INVERTED_FAN_PINS
-
-#define I2C_EEPROM
-#define MARLIN_EEPROM_SIZE              0x10000U  // 64K in a 24C512
-
-#ifndef PS_ON_PIN
-  #define PS_ON_PIN                           12
+//
+// Software SPI pins for TMC2130 stepper drivers
+// This board only supports SW SPI for stepper drivers
+//
+#if HAS_TMC_SPI && DISABLED(TMC_USE_SW_SPI)
+  #warning "TMC_USE_SW_SPI is required for MKS Neptune X with TMC drivers."
+#endif
+#if ENABLED(TMC_USE_SW_SPI)
+  #ifndef TMC_SW_MOSI
+    #define TMC_SW_MOSI                     PD14
+  #endif
+  #ifndef TMC_SW_MISO
+    #define TMC_SW_MISO                     PD1
+  #endif
+  #ifndef TMC_SW_SCK
+    #define TMC_SW_SCK                      PD0
+  #endif
 #endif
 
-#ifndef FILWIDTH_PIN
-  #define FILWIDTH_PIN                         5  // Analog Input on AUX2
-#endif
+#include "pins_MKS_NEPTUNE_X_common.h"
