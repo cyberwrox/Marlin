@@ -847,7 +847,23 @@ static_assert(COUNT(arm) == LOGICAL_AXES, "AXIS_RELATIVE_MODES must contain " _L
   #if ENABLED(DIRECT_STEPPING)
     #error "DIRECT_STEPPING is incompatible with LIN_ADVANCE. (Extrusion is controlled externally by the Step Daemon.)"
   #endif
-#endif
+
+  /**
+   * Smooth Linear Advance
+   */
+  #if ENABLED(SMOOTH_LIN_ADVANCE)
+    #ifndef CPU_32_BIT
+      #error "SMOOTH_LIN_ADVANCE requires a 32-bit CPU."
+    #elif DISTINCT_E > 1
+      #error "SMOOTH_LIN_ADVANCE is not compatible with multiple extruders."
+    #elif ENABLED(S_CURVE_ACCELERATION)
+      #error "SMOOTH_LIN_ADVANCE is not compatible with S_CURVE_ACCELERATION."
+    #elif ENABLED(INPUT_SHAPING_E_SYNC) && NONE(INPUT_SHAPING_X, INPUT_SHAPING_Y)
+      #error "INPUT_SHAPING_E_SYNC requires INPUT_SHAPING_X or INPUT_SHAPING_Y."
+    #endif
+  #endif
+
+#endif // LIN_ADVANCE
 
 /**
  * Nonlinear Extrusion requirements
@@ -4460,7 +4476,7 @@ static_assert(_PLUS_TEST(3), "DEFAULT_MAX_ACCELERATION values must be positive."
  * Direct Stepping requirements
  */
 #if ENABLED(DIRECT_STEPPING)
-  #if ENABLED(CPU_32_BIT)
+  #ifdef CPU_32_BIT
     #error "Direct Stepping is not supported on 32-bit boards."
   #elif !IS_FULL_CARTESIAN
     #error "Direct Stepping is incompatible with enabled kinematics."
