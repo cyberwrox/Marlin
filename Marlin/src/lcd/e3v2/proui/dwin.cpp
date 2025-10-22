@@ -2169,13 +2169,13 @@ void autoHome() { queue.inject_P(G28_STR); }
   void applyZOffset() { TERN_(EEPROM_SETTINGS, settings.save()); }
   void liveZOffset() {
     #if ANY(BABYSTEP_ZPROBE_OFFSET, JUST_BABYSTEP)
-      const float step_zoffset = round((menuData.value / 100.0f) * planner.settings.axis_steps_per_mm[Z_AXIS]) - babystep.accum;
+      const float step_zoffset = roundf((menuData.value * 0.01f) * planner.settings.axis_steps_per_mm[Z_AXIS]) - babystep.accum;
       if (BABYSTEP_ALLOWED()) babystep.add_steps(Z_AXIS, step_zoffset);
     #endif
   }
   void setZOffset() {
     #if ANY(BABYSTEP_ZPROBE_OFFSET, JUST_BABYSTEP)
-      babystep.accum = round(planner.settings.axis_steps_per_mm[Z_AXIS] * BABY_Z_VAR);
+      babystep.accum = LROUND(planner.settings.axis_steps_per_mm[Z_AXIS] * BABY_Z_VAR);
     #endif
     setPFloatOnClick(PROBE_OFFSET_ZMIN, PROBE_OFFSET_ZMAX, 2, applyZOffset, liveZOffset);
   }
@@ -3593,7 +3593,7 @@ void drawTuneMenu() {
 }
 
 #if ENABLED(ADAPTIVE_STEP_SMOOTHING_TOGGLE)
-  void setAdaptiveStepSmoothing() {
+  void toggleAdaptiveStepSmoothing() {
     toggleCheckboxLine(stepper.adaptive_step_smoothing_enabled);
   }
 #endif
@@ -3706,7 +3706,7 @@ void drawMotionMenu() {
       MENU_ITEM(ICON_InputShaping, MSG_INPUT_SHAPING, onDrawSubMenu, drawInputShaping_menu);
     #endif
     #if ENABLED(ADAPTIVE_STEP_SMOOTHING_TOGGLE)
-      EDIT_ITEM(ICON_UBLActive, MSG_STEP_SMOOTHING, onDrawChkbMenu, setAdaptiveStepSmoothing, &stepper.adaptive_step_smoothing_enabled);
+      EDIT_ITEM(ICON_UBLActive, MSG_STEP_SMOOTHING, onDrawChkbMenu, toggleAdaptiveStepSmoothing, &stepper.adaptive_step_smoothing_enabled);
     #endif
     EDIT_ITEM(ICON_Speed, MSG_SPEED, onDrawSpeedItem, setSpeed, &feedrate_percentage);
     EDIT_ITEM(ICON_Flow, MSG_FLOW, onDrawPIntMenu, setFlow, &planner.flow_percentage[0]);
