@@ -31,6 +31,10 @@
 #include "stepper.h" // Access stepper block queue function and abort status.
 #include "endstops.h"
 
+#if ENABLED(POWER_LOSS_RECOVERY)
+  #include "../feature/powerloss.h"
+#endif
+
 FTMotion ftMotion;
 
 //-----------------------------------------------------------------
@@ -75,7 +79,7 @@ float FTMotion::tau = 0.0f;                         // (s) Time since start of b
 TrapezoidalTrajectoryGenerator FTMotion::trapezoidalGenerator;
 Poly5TrajectoryGenerator FTMotion::poly5Generator;
 Poly6TrajectoryGenerator FTMotion::poly6Generator;
-TrajectoryGenerator& FTMotion::currentGenerator = FTMotion::trapezoidalGenerator;
+TrajectoryGenerator* FTMotion::currentGenerator = &FTMotion::trapezoidalGenerator;
 TrajectoryType FTMotion::trajectoryType = TrajectoryType::FTM_TRAJECTORY_TYPE;
 
 // Make vector variables.
@@ -170,6 +174,12 @@ void FTMotion::loop() {
       continue;
     }
     loadBlockData(stepper.current_block);
+
+    #if ENABLED(POWER_LOSS_RECOVERY)
+      recovery.info.sdpos = stepper.current_block->sdpos;
+      recovery.info.current_position = stepper.current_block->start_position;
+    #endif
+
     blockProcRdy = true;
 
     // Some kinematics track axis motion in HX, HY, HZ
@@ -223,7 +233,8 @@ void FTMotion::loop() {
 
   // Interpolation (generation of step commands from fixed time trajectory).
   while (batchRdyForInterp
-    && (stepperCmdBuffItems() < (FTM_STEPPERCMD_BUFF_SIZE) - (FTM_STEPS_PER_UNIT_TIME))) {
+    && (stepperCmdBuffItems() < (FTM_STEPPERCMD_BUFF_SIZE) - (FTM_STEPS_PER_UNIT_TIME))
+  ) {
     generateStepsFromTrajectory(interpIdx);
     if (++interpIdx == FTM_BATCH_SIZE) {
       batchRdyForInterp = false;
@@ -231,7 +242,7 @@ void FTMotion::loop() {
     }
   }
 
-  // Report busy status to planner.
+  // Set busy status for use by planner.busy()
   busy = (stepperCmdBuffHasData || blockProcRdy || batchRdy || batchRdyForInterp);
 
 }
@@ -291,7 +302,7 @@ void FTMotion::loop() {
       case ftMotionShaper_2HEI: {
         max_i = 3U;
         const float vtolx2 = sq(vtol);
-        const float X = pow(vtolx2 * (sqrt(1.0f - vtolx2) + 1.0f), 1.0f / 3.0f);
+        const float X = POW(vtolx2 * (sqrt(1.0f - vtolx2) + 1.0f), 1.0f / 3.0f);
         Ai[0] = (3.0f * sq(X) + 2.0f * X + 3.0f * vtolx2) / (16.0f * X);
         Ai[1] = (0.5f - Ai[0]) * K;
         Ai[2] = Ai[1] * K;
@@ -337,28 +348,28 @@ void FTMotion::loop() {
     const float df = sqrt ( 1.f - sq(zeta) );
     switch (shaper) {
       case ftMotionShaper_ZV:
-        Ni[1] = round((0.5f / f / df) * (FTM_FS));
+        Ni[1] = LROUND((0.5f / f / df) * (FTM_FS));
         break;
       case ftMotionShaper_ZVD:
       case ftMotionShaper_EI:
-        Ni[1] = round((0.5f / f / df) * (FTM_FS));
+        Ni[1] = LROUND((0.5f / f / df) * (FTM_FS));
         Ni[2] = Ni[1] + Ni[1];
         break;
       case ftMotionShaper_ZVDD:
       case ftMotionShaper_2HEI:
-        Ni[1] = round((0.5f / f / df) * (FTM_FS));
+        Ni[1] = LROUND((0.5f / f / df) * (FTM_FS));
         Ni[2] = Ni[1] + Ni[1];
         Ni[3] = Ni[2] + Ni[1];
         break;
       case ftMotionShaper_ZVDDD:
       case ftMotionShaper_3HEI:
-        Ni[1] = round((0.5f / f / df) * (FTM_FS));
+        Ni[1] = LROUND((0.5f / f / df) * (FTM_FS));
         Ni[2] = Ni[1] + Ni[1];
         Ni[3] = Ni[2] + Ni[1];
         Ni[4] = Ni[3] + Ni[1];
         break;
       case ftMotionShaper_MZV:
-        Ni[1] = round((0.375f / f / df) * (FTM_FS));
+        Ni[1] = LROUND((0.375f / f / df) * (FTM_FS));
         Ni[2] = Ni[1] + Ni[1];
         break;
       case ftMotionShaper_NONE:
@@ -372,7 +383,7 @@ void FTMotion::loop() {
     float centroid = 0.0f;
     for (uint8_t i = 1; i <= max_i; ++i) centroid -= Ai[i] * Ni[i];
 
-    Ni[0] = round(centroid);
+    Ni[0] = LROUND(centroid);
 
     // The resulting echo index can be negative, this is ok because it will be offset
     // by the max delay of all axes before it is used.
@@ -491,11 +502,11 @@ void FTMotion::runoutBlock() {
 
   ratio.reset();
   uint32_t max_intervals = PROP_BATCHES * (FTM_BATCH_SIZE) + n_to_settle_shaper + n_to_fill_batch_after_settling;
-  const float reminder_from_last_block = - tau;
+  const float reminder_from_last_block = -tau;
   const float total_duration = max_intervals * FTM_TS + reminder_from_last_block;
 
   // Plan a zero-motion trajectory for runout
-  currentGenerator.planRunout(total_duration);
+  currentGenerator->planRunout(total_duration);
 
   blockProcRdy = true; // since ratio is 0, the trajectory positions won't advance in any axis
 }
@@ -510,7 +521,7 @@ int32_t FTMotion::stepperCmdBuffItems() {
 void FTMotion::init() {
   update_shaping_params();
   TERN_(FTM_SMOOTHING, update_smoothing_params());
-  setTrajectoryType(TrajectoryType::FTM_TRAJECTORY_TYPE);
+  setTrajectoryType(cfg.trajectory_type);
   reset(); // Precautionary.
 }
 
@@ -519,14 +530,15 @@ void FTMotion::setTrajectoryType(const TrajectoryType type) {
   cfg.trajectory_type = trajectoryType = type;
   switch (type) {
     default: cfg.trajectory_type = trajectoryType = TrajectoryType::FTM_TRAJECTORY_TYPE;
-    case TrajectoryType::TRAPEZOIDAL: currentGenerator = trapezoidalGenerator; break;
-    case TrajectoryType::POLY5:       currentGenerator = poly5Generator; break;
-    case TrajectoryType::POLY6:       currentGenerator = poly6Generator; break;
+    case TrajectoryType::TRAPEZOIDAL: currentGenerator = &trapezoidalGenerator; break;
+    case TrajectoryType::POLY5:       currentGenerator = &poly5Generator; break;
+    case TrajectoryType::POLY6:       currentGenerator = &poly6Generator; break;
   }
-  currentGenerator.reset(); // Reset the selected generator
+  currentGenerator->reset(); // Reset the selected generator
 }
 
 // Load / convert block data from planner to fixed-time control variables.
+// Called from FTMotion::loop() at the fetch of the next planner block.
 void FTMotion::loadBlockData(block_t * const current_block) {
   // Cache the extruder index for this block
   TERN_(DISTINCT_E_FACTORS, block_extruder_axis = E_AXIS_N(current_block->extruder));
@@ -541,11 +553,9 @@ void FTMotion::loadBlockData(block_t * const current_block) {
   const float mmps = totalLength / current_block->step_event_count; // (mm/step) Distance for each step
   const float initial_speed = mmps * current_block->initial_rate;   // (mm/s) Start feedrate
   const float final_speed = mmps * current_block->final_rate;       // (mm/s) End feedrate
-  const float accel = current_block->acceleration;
-  const float nominal_speed = current_block->nominal_speed;
 
   // Plan the trajectory using the trajectory generator
-  currentGenerator.plan(initial_speed, final_speed, accel, nominal_speed, totalLength);
+  currentGenerator->plan(initial_speed, final_speed, current_block->acceleration, current_block->nominal_speed, totalLength);
 
   // Accel + Coasting + Decel + datapoints
   const float reminder_from_last_block = - tau;
@@ -555,7 +565,7 @@ void FTMotion::loadBlockData(block_t * const current_block) {
   TERN_(FTM_HAS_LIN_ADVANCE, use_advance_lead = current_block->use_advance_lead);
 
   // Watch endstops until the move ends
-  const float total_duration = currentGenerator.getTotalDuration();
+  const float total_duration = currentGenerator->getTotalDuration();
   uint32_t max_intervals = ceil((total_duration + reminder_from_last_block) * FTM_FS);
   const millis_t move_end_ti = millis() + SEC_TO_MS((FTM_TS) * float(max_intervals + num_samples_shaper_settle() + ((PROP_BATCHES) + 1) * (FTM_BATCH_SIZE)) + (float(FTM_STEPPERCMD_BUFF_SIZE) / float(FTM_STEPPER_FS)));
 
@@ -570,8 +580,9 @@ void FTMotion::loadBlockData(block_t * const current_block) {
 }
 
 // Generate data points of the trajectory.
+// Called from FTMotion::loop() at the fetch of a new planner block, after loadBlockData.
 void FTMotion::generateTrajectoryPointsFromBlock() {
-  const float total_duration = currentGenerator.getTotalDuration();
+  const float total_duration = currentGenerator->getTotalDuration();
   if (tau + FTM_TS > total_duration) {
     // TODO: refactor code so this thing is not twice.
     // the reason of it being in the beginning, is that a block can be so short that it has
@@ -588,7 +599,7 @@ void FTMotion::generateTrajectoryPointsFromBlock() {
                                   // tau can start negative, but it always holds that `tau > -FTM_TS`
 
     // Get distance from trajectory generator
-    const float dist = currentGenerator.getDistanceAtTime(tau);
+    const float dist = currentGenerator->getDistanceAtTime(tau);
 
     #define _SET_TRAJ(q) traj.q[traj_idx_set] = startPos.q + ratio.q * dist;
     LOGICAL_AXIS_MAP_LC(_SET_TRAJ);
