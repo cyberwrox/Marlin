@@ -1867,6 +1867,8 @@
 #endif
 #if ANY_AXIS_HAS(SW_SERIAL)
   #define HAS_TMC_SW_SERIAL 1
+#elif HAS_TRINAMIC_CONFIG
+  #define HAS_TMC_WITHOUT_SW_SERIAL 1
 #endif
 #ifndef SERIAL_FLOAT_PRECISION
   #define SERIAL_FLOAT_PRECISION 2
@@ -3678,4 +3680,8 @@
                                                       //   2HEI     : FTM_RATIO * 3 / 2
                                                       //   3HEI     : FTM_RATIO * 2
   #define FTM_SMOOTHING_ORDER 5                       // 3 to 5 is closest to gaussian
+  #ifndef FTM_BUFFER_SIZE
+    #define FTM_BUFFER_SIZE 128
+  #endif
+  #define FTM_BUFFER_MASK (FTM_BUFFER_SIZE - 1u)
 #endif
