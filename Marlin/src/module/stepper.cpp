@@ -1586,7 +1586,7 @@ void Stepper::isr() {
       #endif
 
       // Get the interval to the next ISR call
-      interval = uint32_t(STEPPER_TIMER_RATE * 0.030);                    // Max wait of 30ms regardless of stepper timer frequency
+      interval = hal_timer_t(STEPPER_TIMER_RATE * 0.03);                  // Max wait of 30ms regardless of stepper timer frequency
       NOMORE(interval, nextMainISR);                                      // Time until the next Pulse / Block phase
       TERN_(INPUT_SHAPING_X, NOMORE(interval, ShapingQueue::peek_x()));   // Time until next input shaping echo for X
       TERN_(INPUT_SHAPING_Y, NOMORE(interval, ShapingQueue::peek_y()));   // Time until next input shaping echo for Y
@@ -2474,7 +2474,7 @@ hal_timer_t Stepper::block_phase_isr() {
             else cutter.apply_power(0);
           }
         #endif
-        TERN_(SMOOTH_LIN_ADVANCE, curr_step_rate = acc_step_rate;)
+        TERN_(SMOOTH_LIN_ADVANCE, curr_step_rate = acc_step_rate);
       }
       // Are we in Deceleration phase ?
       else if (step_events_completed >= decelerate_start) {
@@ -2548,7 +2548,7 @@ hal_timer_t Stepper::block_phase_isr() {
             }
           }
         #endif
-        TERN_(SMOOTH_LIN_ADVANCE, curr_step_rate = step_rate;)
+        TERN_(SMOOTH_LIN_ADVANCE, curr_step_rate = step_rate);
       }
       else {  // Must be in cruise phase otherwise
 
@@ -2558,7 +2558,7 @@ hal_timer_t Stepper::block_phase_isr() {
           ticks_nominal = calc_multistep_timer_interval(current_block->nominal_rate << oversampling_factor);
           // Prepare for deceleration
           IF_DISABLED(S_CURVE_ACCELERATION, acc_step_rate = current_block->nominal_rate);
-          TERN_(SMOOTH_LIN_ADVANCE, curr_step_rate = current_block->nominal_rate;)
+          TERN_(SMOOTH_LIN_ADVANCE, curr_step_rate = current_block->nominal_rate);
           deceleration_time = ticks_nominal / 2;
 
           // Apply Nonlinear Extrusion, if enabled
