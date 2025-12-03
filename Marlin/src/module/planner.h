@@ -474,7 +474,7 @@ class Planner {
       static float e_factor[EXTRUDERS];             // The flow percentage and volumetric multiplier combine to scale E movement
     #endif
 
-    #if DISABLED(NO_VOLUMETRICS)
+    #if HAS_VOLUMETRIC_EXTRUSION
       static float volumetric_area_nominal;           // (mm^3) Nominal cross-sectional area
       static float filament_size[EXTRUDERS],          // (mm) Diameter of filament, typically around 1.75 or 2.85, 0 disables the volumetric calculations for the extruder
                    volumetric_multiplier[EXTRUDERS];  // (1/mm^2) Reciprocal of cross-sectional area of filament. Pre-calculated to reduce computation in the planner
@@ -660,7 +660,7 @@ class Planner {
 
     #if HAS_EXTRUDERS
       FORCE_INLINE static void refresh_e_factor(const uint8_t e) {
-        e_factor[e] = flow_percentage[e] * 0.01f IF_DISABLED(NO_VOLUMETRICS, * volumetric_multiplier[e]);
+        e_factor[e] = MUL_TERN(HAS_VOLUMETRIC_EXTRUSION, flow_percentage[e] * 0.01f, volumetric_multiplier[e]);
       }
 
       static void set_flow(const uint8_t e, const int16_t flow) {
@@ -702,7 +702,7 @@ class Planner {
       void enable_stall_prevention(const bool onoff);
     #endif
 
-    #if DISABLED(NO_VOLUMETRICS)
+    #if HAS_VOLUMETRIC_EXTRUSION
 
       // Update multipliers based on new diameter measurements
       static void calculate_volumetric_multipliers();
@@ -711,6 +711,10 @@ class Planner {
         // Update pre calculated extruder feedrate limits based on volumetric values
         static void calculate_volumetric_extruder_limit(const uint8_t e);
         static void calculate_volumetric_extruder_limits();
+        FORCE_INLINE static void set_volumetric_extruder_limit(const uint8_t e, const float v) {
+          volumetric_extruder_limit[e] = v;
+          calculate_volumetric_extruder_limit(e);
+        }
       #endif
 
       FORCE_INLINE static void set_filament_size(const uint8_t e, const float v) {
@@ -721,13 +725,6 @@ class Planner {
           if (!filament_size[i]) filament_size[i] = DEFAULT_NOMINAL_FILAMENT_DIA;
       }
 
-    #endif
-
-    #if ENABLED(VOLUMETRIC_EXTRUDER_LIMIT)
-      FORCE_INLINE static void set_volumetric_extruder_limit(const uint8_t e, const float v) {
-        volumetric_extruder_limit[e] = v;
-        calculate_volumetric_extruder_limit(e);
-      }
     #endif
 
     #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
@@ -878,7 +875,7 @@ class Planner {
     FORCE_INLINE static block_t* get_next_free_block(uint8_t &next_buffer_head, const uint8_t count=1) {
 
       // Wait until there are enough slots free
-      while (moves_free() < count) { idle(); }
+      while (moves_free() < count) { marlin.idle(); }
 
       // Return the first available block
       next_buffer_head = next_block_index(block_buffer_head);
@@ -1160,12 +1157,14 @@ class Planner {
         vector *= RSQRT(magnitude_sq);
       }
 
+      // max_value is block->acceleration
       FORCE_INLINE static float limit_value_by_axis_maximum(const float max_value, xyze_float_t &unit_vec) {
         float limit_value = max_value;
         LOOP_LOGICAL_AXES(idx) {
           if (unit_vec[idx]) {
-            if (limit_value * ABS(unit_vec[idx]) > settings.max_acceleration_mm_per_s2[idx])
-              limit_value = ABS(settings.max_acceleration_mm_per_s2[idx] / unit_vec[idx]);
+            const uint32_t abs_vec = ABS(unit_vec[idx]);
+            if (limit_value * abs_vec > settings.max_acceleration_mm_per_s2[idx])
+              limit_value = settings.max_acceleration_mm_per_s2[idx] / abs_vec;
           }
         }
         return limit_value;

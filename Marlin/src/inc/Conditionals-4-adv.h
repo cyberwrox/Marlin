@@ -245,6 +245,10 @@
   #undef STEALTHCHOP_E
 #endif
 
+#if DISABLED(NO_VOLUMETRICS)
+  #define HAS_VOLUMETRIC_EXTRUSION 1
+#endif
+
 #if !TEMP_SENSOR_CHAMBER
   #undef CHAMBER_CHECK_INTERVAL
   #undef CHAMBER_AUTO_FAN_PIN
@@ -1132,7 +1136,7 @@
   #undef SERIAL_XON_XOFF
 #endif
 
-#if ENABLED(HOST_PROMPT_SUPPORT) && DISABLED(EMERGENCY_PARSER)
+#if ENABLED(HOST_PROMPT_SUPPORT)
   #define HAS_GCODE_M876 1
 #endif
 
@@ -1522,7 +1526,7 @@
   #define HAS_ZV_SHAPING 1
 #endif
 
-// FT Motion unified window and batch size
+// FT Motion: Shapers
 #if ENABLED(FT_MOTION)
   #if HAS_X_AXIS
     #define HAS_FTM_SHAPING 1
