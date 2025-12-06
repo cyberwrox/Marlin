@@ -53,6 +53,9 @@ auto MarlinSerial::get_instance(usart::USART_Base Base, pin_size_t rxPin, pin_si
 #if USING_HW_SERIAL4
   MSerialT MSerial4(true, MarlinSerial::get_instance(usart::USART_Base::UART4_BASE, NO_PIN, NO_PIN));
 #endif
+#if USING_HW_SERIAL5
+  MSerialT MSerial5(true, MarlinSerial::get_instance(usart::USART_Base::UART5_BASE, HW_SERIAL_5_RX_PIN, HW_SERIAL_5_TX_PIN));
+#endif
 
 #if ENABLED(EMERGENCY_PARSER)
   // This callback needs to access the specific MarlinSerial instance

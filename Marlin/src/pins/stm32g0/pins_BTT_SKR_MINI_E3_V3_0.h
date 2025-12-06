@@ -105,9 +105,13 @@
 #define Z_STEP_PIN                          PB0
 #define Z_DIR_PIN                           PC5
 
-#define E0_ENABLE_PIN                       PD1
-#define E0_STEP_PIN                         PB3
-#define E0_DIR_PIN                          PB4
+#define Z2_ENABLE_PIN                       PD1
+#define Z2_STEP_PIN                         PB3
+#define Z2_DIR_PIN                          PB4
+
+#define E0_ENABLE_PIN                       PD0
+#define E0_STEP_PIN                         PD4
+#define E0_DIR_PIN                          PD5
 
 #if HAS_TMC_UART
   /**
@@ -117,7 +121,12 @@
   #define X_HARDWARE_SERIAL  MSerial4
   #define Y_HARDWARE_SERIAL  MSerial4
   #define Z_HARDWARE_SERIAL  MSerial4
-  #define E0_HARDWARE_SERIAL MSerial4
+  #define Z2_HARDWARE_SERIAL  MSerial4
+  #define E0_HARDWARE_SERIAL MSerial5
+
+  #define HW_SERIAL_5_RX_PIN               PD2  // EXTERNAL TMC UART
+  #define HW_SERIAL_5_TX_PIN               PD3  // EXTERNAL TMC UART
+
 
   // Default TMC slave addresses
   #ifndef X_SLAVE_ADDRESS
@@ -129,13 +138,17 @@
   #ifndef Z_SLAVE_ADDRESS
     #define Z_SLAVE_ADDRESS                    1
   #endif
+  #ifndef Z2_SLAVE_ADDRESS
+    #define Z2_SLAVE_ADDRESS                    3
+  #endif
   #ifndef E0_SLAVE_ADDRESS
-    #define E0_SLAVE_ADDRESS                   3
+    #define E0_SLAVE_ADDRESS                   0
   #endif
   static_assert(X_SLAVE_ADDRESS == 0, "X_SLAVE_ADDRESS must be 0 for BOARD_BTT_SKR_MINI_E3_V3_0.");
   static_assert(Y_SLAVE_ADDRESS == 2, "Y_SLAVE_ADDRESS must be 2 for BOARD_BTT_SKR_MINI_E3_V3_0.");
   static_assert(Z_SLAVE_ADDRESS == 1, "Z_SLAVE_ADDRESS must be 1 for BOARD_BTT_SKR_MINI_E3_V3_0.");
-  static_assert(E0_SLAVE_ADDRESS == 3, "E0_SLAVE_ADDRESS must be 3 for BOARD_BTT_SKR_MINI_E3_V3_0.");
+  static_assert(Z2_SLAVE_ADDRESS == 3, "Z_SLAVE_ADDRESS must be 3 for BOARD_BTT_SKR_MINI_E3_V3_0 + External Driver.");
+  static_assert(E0_SLAVE_ADDRESS == 0, "E0_SLAVE_ADDRESS must be 0 for BOARD_BTT_SKR_MINI_E3_V3_0 + External Driver.");
 #endif
 
 //
@@ -467,3 +480,6 @@
 #define UART2_RX_PIN                        PA3   // default usage TFT connector
 #define UART4_TX_PIN                        PC10  // default usage TMC UART
 #define UART4_RX_PIN                        PC11  // default usage TMC UART
+
+#define UART5_TX_PIN                        PD3  // default usage EXTERNAL TMC UART
+#define UART5_RX_PIN                        PD2  // default usage EXTERNAL TMC UART
